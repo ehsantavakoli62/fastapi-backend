@@ -27,10 +27,12 @@ services:
     depends_on:
       - db
     environment:
-      # متغیر محیطی اتصال به دیتابیس که در session.py استفاده شد
+      # متغیرهای اتصال و تنظیمات
       SQLALCHEMY_DATABASE_URL: postgresql+psycopg2://postgres:postgres@db:5432/app
-      # تنظیم پایتون برای عدم بافرینگ
       PYTHONUNBUFFERED: 1
-
+      # متغیرهای جدید برای JWT (Skillbox)
+      SECRET_KEY: "YOUR_SECRET_KEY" 
+      ALGORITHM: "HS256"
+      ACCESS_TOKEN_EXPIRE_MINUTES: 30
 volumes:
   postgres_data:
