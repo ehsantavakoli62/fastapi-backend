@@ -1,0 +1,36 @@
+# docker-compose.yml
+version: '3.9'
+
+services:
+  # سرویس پایگاه داده (PostgreSQL)
+  db:
+    image: postgres:15-alpine
+    container_name: postgres_db
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: app
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+
+  # سرویس برنامه وب (FastAPI)
+  web:
+    build: .
+    container_name: root-web
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8000
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    depends_on:
+      - db
+    environment:
+      # متغیر محیطی اتصال به دیتابیس که در session.py استفاده شد
+      SQLALCHEMY_DATABASE_URL: postgresql+psycopg2://postgres:postgres@db:5432/app
+      # تنظیم پایتون برای عدم بافرینگ
+      PYTHONUNBUFFERED: 1
+
+volumes:
+  postgres_data:
