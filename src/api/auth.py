@@ -1,5 +1,7 @@
 # src/api/auth.py
 
+# src/api/auth.py
+
 from datetime import timedelta
 from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -8,7 +10,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select
 
 from ..db import models
-from ..schemas import schemas # اضافه کردن import برای schemas
+from ..schemas import schemas 
 from ..schemas.token import Token
 from ..schemas.user import UserCreate
 from ..utils import get_password_hash, verify_password
@@ -27,7 +29,7 @@ def authenticate_user(db: Session, email: str, password: str) -> models.User | N
     return user
 
 
-def register_user(*, db: Session = Depends(get_db), user_in: UserCreate) -> Any:
+def register_user(*, db: Session, user_in: UserCreate) -> Any:
     """
     ثبت نام کاربر جدید.
     در صورت وجود ایمیل، خطا می‌دهد.
@@ -56,16 +58,18 @@ def register_user(*, db: Session = Depends(get_db), user_in: UserCreate) -> Any:
     
     return db_user
 
-# روتر اصلی که به تابع register_user متصل می‌شود و مدل خروجی صحیح را دارد
+
+# روتر اصلی برای ثبت نام (بر اساس کد Skillbox)
 @router.post("/register", response_model=schemas.User)
 async def register(
     user: schemas.UserCreate,
     db: Session = Depends(get_db),
 ):
-    # فراخوانی تابع کمکی register_user
+    # فراخوانی تابع کمکی register_user 
     return register_user(db=db, user_in=user)
 
 
+# روتر اصلی برای ورود و دریافت توکن (بر اساس کد Skillbox)
 @router.post("/access-token", response_model=Token)
 def login_for_access_token(
     db: Session = Depends(get_db), form_data: OAuth2PasswordRequestForm = Depends()
