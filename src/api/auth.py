@@ -1,8 +1,5 @@
 # src/api/auth.py
 
-# src/api/auth.py
-
-from datetime import timedelta
 from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
@@ -10,87 +7,69 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select
 
 from ..db import models
-from ..schemas import schemas 
-from ..schemas.token import Token
-from ..schemas.user import UserCreate
-from ..utils import get_password_hash, verify_password
-from .deps import get_db, create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
+from ..db.session import get_db
+from ..schemas import user as schemas_user # استفاده از نام مستعار
+from ..core import security # توابع کمکی برای هش رمز عبور و API Key
+
+router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
-router = APIRouter(prefix="/auth", tags=["auth"])
-
-
-# تابع کمکی برای اعتبارسنجی کاربر
-def authenticate_user(db: Session, email: str, password: str) -> models.User | None:
-    """اعتبارسنجی کاربر بر اساس ایمیل و رمز عبور"""
-    user = db.execute(select(models.User).filter(models.User.email == email)).scalar_one_or_none()
-    if not user or not verify_password(password, user.hashed_password):
-        return None
-    return user
-
-
-def register_user(*, db: Session, user_in: UserCreate) -> Any:
+# 1. روتر ثبت نام (POST /auth/register)
+@router.post("/register", response_model=schemas_user.User)
+def register_user(
+    user_in: schemas_user.UserCreate,
+    db: Session = Depends(get_db),
+) -> Any:
     """
-    ثبت نام کاربر جدید.
-    در صورت وجود ایمیل، خطا می‌دهد.
+    ثبت نام کاربر جدید و بازگرداندن اطلاعات کاربر (شامل API Key).
     """
+    # 1. بررسی وجود کاربر
     user = db.execute(select(models.User).filter(models.User.email == user_in.email)).scalar_one_or_none()
     if user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="The user with this email already exists in the system.",
+            detail="User with this email already exists."
         )
+
+    # 2. هش کردن رمز عبور
+    hashed_password = security.get_password_hash(user_in.password)
+
+    # 3. ایجاد API Key منحصر به فرد
+    api_key = security.create_api_key()
     
-    # هش کردن رمز عبور
-    hashed_password = get_password_hash(user_in.password)
-    
-    # ایجاد مدل کاربر جدید
+    # 4. ذخیره کاربر در دیتابیس
     db_user = models.User(
-        email=user_in.email, 
+        name=user_in.name,
+        email=user_in.email,
         hashed_password=hashed_password,
-        is_active=True,
+        api_key=api_key, # اضافه شده برای تکلیف Skillbox
         is_superuser=user_in.is_superuser
     )
-
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
-    
+
     return db_user
 
 
-# روتر اصلی برای ثبت نام (بر اساس کد Skillbox)
-@router.post("/register", response_model=schemas.User)
-async def register(
-    user: schemas.UserCreate,
+# 2. روتر دریافت توکن (POST /auth/access-token)
+@router.post("/access-token", response_model=schemas_user.Token)
+def login_access_token(
     db: Session = Depends(get_db),
-):
-    # فراخوانی تابع کمکی register_user 
-    return register_user(db=db, user_in=user)
-
-
-# روتر اصلی برای ورود و دریافت توکن (بر اساس کد Skillbox)
-@router.post("/access-token", response_model=Token)
-def login_for_access_token(
-    db: Session = Depends(get_db), form_data: OAuth2PasswordRequestForm = Depends()
+    form_data: OAuth2PasswordRequestForm = Depends(),
 ) -> Any:
     """
-    دریافت توکن دسترسی OAuth2 برای ورود کاربر.
+    دریافت توکن JWT برای ورود.
     """
-    user = authenticate_user(db, email=form_data.username, password=form_data.password)
-
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+    user = db.execute(select(models.User).filter(models.User.email == form_data.username)).scalar_one_or_none()
     
-    # ایجاد توکن دسترسی
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    if not user or not security.verify_password(form_data.password, user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Incorrect username or password"
+        )
+        
     return {
-        "access_token": create_access_token(
-            subject=user.id, expires_delta=access_token_expires
-        ),
+        "access_token": security.create_access_token(subject=user.email),
         "token_type": "bearer",
     }
