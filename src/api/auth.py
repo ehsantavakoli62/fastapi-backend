@@ -8,14 +8,14 @@ from sqlalchemy import select
 
 from ..db import models
 from ..db.session import get_db
-from ..schemas import user as schemas_user # صحیح: استفاده از Pydantic Schema
+from ..schemas import user as schemas_user # FIX: استفاده از شمای Pydantic
 from ..core import security 
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
 # 1. روتر ثبت نام (POST /auth/register)
-@router.post("/register", response_model=schemas_user.User) # FIX: استفاده از شمای Pydantic
+@router.post("/register", response_model=schemas_user.User) 
 def register_user(
     user_in: schemas_user.UserCreate,
     db: Session = Depends(get_db),
