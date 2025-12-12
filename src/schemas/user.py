@@ -1,28 +1,112 @@
 # src/schemas/user.py
-# طرح‌واره‌های Pydantic برای مدل User
 
+from typing import List, Optional, Any
 from pydantic import BaseModel, Field
 
 
-# Base Schema: شامل فیلدهایی که در همه جا (حتی در پاسخ‌ها) استفاده می‌شوند
-class UserBase(BaseModel):
-    email: str = Field(..., example="test@example.com")
-    is_active: bool = True
+# --- Schemas for User (Auth and Profile) ---
+
+# شمای مورد نیاز برای ثبت نام (شامل نام برای نمایش در فید)
+class UserCreate(BaseModel):
+    name: str = Field(..., example="Cool Dev")
+    email: str = Field(..., example="user@example.com")
+    password: str = Field(..., example="secure_password")
     is_superuser: bool = False
 
-    # پیکربندی: برای فعال کردن سازگاری با مدل‌های ORM (SQLAlchemy)
+
+# شمای پایه برای نمایش اطلاعات کاربر (درون توییت یا لیست)
+class UserBase(BaseModel):
+    id: int = Field(..., example=1)
+    name: str = Field(..., example="Cool Dev")
+
     class Config:
-        # Pydantic V1 syntax
-        orm_mode = True
-        # Pydantic V2 syntax (برای تضمین سازگاری)
         from_attributes = True
 
 
-# Schema برای ثبت نام: نیاز به ایمیل، رمز عبور و پرمیشن‌ها
-class UserCreate(UserBase):
-    password: str = Field(..., min_length=8, example="StrongPassword123")
-
-
-# Schema برای پاسخ (Response Model): شامل ID است
+# شمای کامل کاربر که در پاسخ ثبت نام و GET /api/users/<id> استفاده می‌شود.
 class User(UserBase):
+    # لیست کاربران فالور (بر اساس شمای پایه)
+    followers: List[UserBase] = Field(..., default=[]) 
+    # لیست کاربرانی که فالو کرده است (بر اساس شمای پایه)
+    following: List[UserBase] = Field(..., default=[]) 
+
+
+# شمای GET /api/users/me (تنها برای API Key)
+class UserMe(BaseModel):
+    result: bool = Field(..., example=True)
+    user: User 
+    
+    class Config:
+        from_attributes = True
+
+
+# --- Schemas for Media ---
+
+# شمای پاسخ برای آپلود مدیا (POST /api/medias)
+class MediaResponse(BaseModel):
+    result: bool = Field(..., example=True)
+    media_id: int = Field(..., example=1)
+
+# شمای پایه برای نمایش مدیا در خروجی توییت
+class MediaBase(BaseModel):
     id: int = Field(..., example=1)
+    url: str = Field(..., example="/api/medias/1") # آدرس URL محلی فایل
+
+    class Config:
+        from_attributes = True
+
+
+# --- Schemas for Tweets ---
+
+# شمای مورد نیاز برای ایجاد توییت (POST /api/tweets)
+class TweetCreate(BaseModel):
+    tweet_data: str = Field(..., example="This is my first tweet!")
+    # لیست اختیاری ID های مدیا که قبلاً آپلود شده‌اند
+    tweet_media_ids: Optional[List[int]] = Field(None, example=[1, 2])
+
+
+# شمای لایک (برای نمایش در لیست لایک‌های توییت)
+class LikeBase(BaseModel):
+    user_id: int = Field(..., example=1)
+    name: str = Field(..., example="Cool Dev")
+
+    class Config:
+        from_attributes = True
+
+
+# شمای پایه برای نمایش یک توییت در فید یا خروجی API
+class TweetResponseBase(BaseModel):
+    id: int = Field(..., example=1)
+    content: str = Field(..., example="This is my first tweet!")
+    # Attachments اکنون به جای لیست لینک‌ها، لیست شمای مدیا است
+    attachments: List[MediaBase] = Field(..., default=[]) 
+    author: UserBase
+    likes: List[LikeBase] = Field(..., default=[]) # لیست کاربرانی که لایک کرده‌اند
+
+    class Config:
+        from_attributes = True
+
+
+# شمای پاسخ برای ایجاد توییت (POST /api/tweets)
+class TweetCreateResponse(BaseModel):
+    result: bool = Field(..., example=True)
+    tweet_id: int = Field(..., example=1)
+
+
+# شمای پاسخ برای فید اصلی (GET /api/tweets)
+class TweetListResponse(BaseModel):
+    result: bool = Field(..., example=True)
+    tweets: List[TweetResponseBase] = Field(..., default=[]) 
+
+
+# --- شمای پایه برای پاسخ‌های وضعیت (Status Responses) ---
+
+# شمای پاسخ موفقیت‌آمیز برای عملیات‌هایی مانند لایک، فالو، حذف
+class StatusResponse(BaseModel):
+    result: bool = Field(..., example=True)
+
+# شمای پاسخ خطا (بر اساس سند Skillbox)
+class ErrorResponse(BaseModel):
+    result: bool = Field(..., example=False)
+    error_type: str = Field(..., example="NotFound")
+    error_message: str = Field(..., example="Tweet not found.")
