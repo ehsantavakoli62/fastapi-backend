@@ -1,35 +1,28 @@
-
 # src/schemas/user.py
+# طرح‌واره‌های Pydantic برای مدل User
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, Field
 
 
+# Base Schema: شامل فیلدهایی که در همه جا (حتی در پاسخ‌ها) استفاده می‌شوند
 class UserBase(BaseModel):
-    """مدل پایه برای تعریف فیلدهای مشترک کاربران"""
-    email: EmailStr
-    is_active: bool | None = True
-    is_superuser: bool | None = False
+    email: str = Field(..., example="test@example.com")
+    is_active: bool = True
+    is_superuser: bool = False
 
-
-class UserCreate(UserBase):
-    """مدل مورد نیاز برای ثبت نام کاربر جدید (شامل رمز عبور)"""
-    password: str
-
-
-class UserUpdate(UserBase):
-    """مدل مورد نیاز برای به‌روزرسانی اطلاعات کاربر"""
-    password: str | None = None
-
-
-class UserInDBBase(UserBase):
-    """مدل پایه برای خواندن اطلاعات کاربر از پایگاه داده"""
-    id: int | None = None
-
+    # پیکربندی: برای فعال کردن سازگاری با مدل‌های ORM (SQLAlchemy)
     class Config:
-        """تنظیمات برای سازگاری با SQLAlchemy (اجازه خواندن از ORM)"""
+        # Pydantic V1 syntax
+        orm_mode = True
+        # Pydantic V2 syntax (برای تضمین سازگاری)
         from_attributes = True
 
 
-class User(UserInDBBase):
-    """مدل نهایی برای نمایش اطلاعات کاربر به کاربران دیگر"""
-    pass
+# Schema برای ثبت نام: نیاز به ایمیل، رمز عبور و پرمیشن‌ها
+class UserCreate(UserBase):
+    password: str = Field(..., min_length=8, example="StrongPassword123")
+
+
+# Schema برای پاسخ (Response Model): شامل ID است
+class User(UserBase):
+    id: int = Field(..., example=1)
