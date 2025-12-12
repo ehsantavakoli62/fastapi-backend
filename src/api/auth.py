@@ -8,14 +8,14 @@ from sqlalchemy import select
 
 from ..db import models
 from ..db.session import get_db
-from ..schemas import user as schemas_user # استفاده از نام مستعار
-from ..core import security # توابع کمکی برای هش رمز عبور و API Key
+from ..schemas import user as schemas_user # صحیح: استفاده از Pydantic Schema
+from ..core import security 
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
 # 1. روتر ثبت نام (POST /auth/register)
-@router.post("/register", response_model=schemas_user.User)
+@router.post("/register", response_model=schemas_user.User) # FIX: استفاده از شمای Pydantic
 def register_user(
     user_in: schemas_user.UserCreate,
     db: Session = Depends(get_db),
@@ -42,7 +42,7 @@ def register_user(
         name=user_in.name,
         email=user_in.email,
         hashed_password=hashed_password,
-        api_key=api_key, # اضافه شده برای تکلیف Skillbox
+        api_key=api_key,
         is_superuser=user_in.is_superuser
     )
     db.add(db_user)
