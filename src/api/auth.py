@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select
 
 from ..db import models
-from ..db.session import SessionLocal
+from ..schemas import schemas # اضافه کردن import برای schemas
 from ..schemas.token import Token
 from ..schemas.user import UserCreate
 from ..utils import get_password_hash, verify_password
@@ -27,12 +27,6 @@ def authenticate_user(db: Session, email: str, password: str) -> models.User | N
     return user
 
 
-@router.post("/register") # پارامتر حذف شد
-async def register(
-    user: schemas.UserCreate,
-    db: Session = Depends(get_db),
-):
-    return service.create_user(db, user)
 def register_user(*, db: Session = Depends(get_db), user_in: UserCreate) -> Any:
     """
     ثبت نام کاربر جدید.
@@ -61,6 +55,15 @@ def register_user(*, db: Session = Depends(get_db), user_in: UserCreate) -> Any:
     db.refresh(db_user)
     
     return db_user
+
+# روتر اصلی که به تابع register_user متصل می‌شود و مدل خروجی صحیح را دارد
+@router.post("/register", response_model=schemas.User)
+async def register(
+    user: schemas.UserCreate,
+    db: Session = Depends(get_db),
+):
+    # فراخوانی تابع کمکی register_user
+    return register_user(db=db, user_in=user)
 
 
 @router.post("/access-token", response_model=Token)
