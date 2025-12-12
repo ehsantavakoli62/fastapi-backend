@@ -27,7 +27,7 @@ def authenticate_user(db: Session, email: str, password: str) -> models.User | N
     return user
 
 
-@router.post("/register", response_model=models.User)
+@router.post("/register", response_model=schemas.User)
 def register_user(*, db: Session = Depends(get_db), user_in: UserCreate) -> Any:
     """
     ثبت نام کاربر جدید.
