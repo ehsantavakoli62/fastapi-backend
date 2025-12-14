@@ -1,23 +1,21 @@
 # src/db/session.py
 
-import os
+from typing import Generator
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-# 1. تعریف آدرس اتصال به پایگاه داده
-# از متغیرهای محیطی که در Docker-Compose تعریف می‌کنیم استفاده می‌شود
-SQLALCHEMY_DATABASE_URL = os.environ.get(
-    "SQLALCHEMY_DATABASE_URL",
-    "postgresql+psycopg2://postgres:postgres@db:5432/app"
-)
+from ..core.config import settings
 
-# 2. ایجاد Engine
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL,
-    # در محیط پروداکشن، این خط باید False باشد
-    pool_pre_ping=True
-)
+# Create engine for connecting to the PostgreSQL database
+engine = create_engine(settings.SQLALCHEMY_DATABASE_URL)
 
-# 3. ایجاد SessionLocal
-# این شیء برای ایجاد یک Session برای هر درخواست استفاده می‌شود
+# Configure session maker
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+# Dependency to get the database session
+def get_db() -> Generator:
+    try:
+        db = SessionLocal()
+        yield db
+    finally:
+        db.close()
