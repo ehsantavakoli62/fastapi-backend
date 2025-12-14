@@ -1,38 +1,14 @@
-# docker-compose.yml
-version: '3.9'
-
 services:
-  # سرویس پایگاه داده (PostgreSQL)
-  db:
-    image: postgres:15-alpine
-    container_name: postgres_db
-    ports:
-      - "5432:5432"
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: app
-    volumes:
-      - postgres_data:/var/lib/postgresql/data/
-
-  # سرویس برنامه وب (FastAPI)
   web:
     build: .
-    container_name: root-web
-    command: uvicorn src.main:app --host 0.0.0.0 --port 8000
+    command: uvicorn src.main:app --host 0.0.0.0 --reload
     ports:
-      - "8000:8000"
+      - 8000:8000
     volumes:
       - .:/app
+    # بخش حیاتی برای اطمینان از بالا آمدن دیتابیس
     depends_on:
-      - db
-    environment:
-      # متغیرهای اتصال و تنظیمات
-      SQLALCHEMY_DATABASE_URL: postgresql+psycopg2://postgres:postgres@db:5432/app
-      PYTHONUNBUFFERED: 1
-      # متغیرهای جدید برای JWT (Skillbox)
-      SECRET_KEY: "YOUR_SECRET_KEY" 
-      ALGORITHM: "HS256"
-      ACCESS_TOKEN_EXPIRE_MINUTES: 30
-volumes:
-  postgres_data:
+      - postgres_db 
+
+  postgres_db:
+    # ... بقیه کد مربوط به postgres_db
