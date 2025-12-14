@@ -1,19 +1,23 @@
 # src/api/router.py
 
 from fastapi import APIRouter
+
+# وارد کردن روترهای موجود
 from . import auth
 
-# ایجاد نمونه APIRouter
-# تمام مسیرها تحت پیشوند /api/v1 قرار می‌گیرند
-router = APIRouter(prefix="/api/v1")
+# وارد کردن روترهای جدید
+from . import tweet
+from . import media
+from . import user_profile
 
-# افزودن روتر احراز هویت
+
+router = APIRouter()
+
+
+# اضافه کردن روترهای موجود (احراز هویت)
 router.include_router(auth.router)
 
-
-@router.get("/status")
-def get_status():
-    """
-    مسیر تست سلامت برنامه
-    """
-    return {"status": "ok", "message": "API is running"}
+# اضافه کردن روترهای جدید (عملیات میکروبلاگ)
+router.include_router(tweet.router)
+router.include_router(media.router)
+router.include_router(user_profile.router)

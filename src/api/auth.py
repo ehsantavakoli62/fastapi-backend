@@ -8,7 +8,7 @@ from sqlalchemy import select
 
 from ..db import models
 from ..db.session import get_db
-from ..schemas import user as schemas_user  # توجه: این خط بسیار مهم است.
+from ..schemas import user as schemas_user
 from ..core import security
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
