@@ -26,16 +26,16 @@ class UserBase(BaseModel):
 # شمای کامل کاربر که در پاسخ ثبت نام و GET /api/users/<id> استفاده می‌شود.
 class User(UserBase):
     # لیست کاربران فالور (بر اساس شمای پایه)
-    followers: List[UserBase] = Field(..., default=[]) 
+    followers: List[UserBase] = Field(default_factory=list)  # اصلاح شده
     # لیست کاربرانی که فالو کرده است (بر اساس شمای پایه)
-    following: List[UserBase] = Field(..., default=[]) 
+    following: List[UserBase] = Field(default_factory=list)  # اصلاح شده
 
 
 # شمای GET /api/users/me (تنها برای API Key)
 class UserMe(BaseModel):
     result: bool = Field(..., example=True)
-    user: User 
-    
+    user: User
+
     class Config:
         from_attributes = True
 
@@ -47,10 +47,11 @@ class MediaResponse(BaseModel):
     result: bool = Field(..., example=True)
     media_id: int = Field(..., example=1)
 
+
 # شمای پایه برای نمایش مدیا در خروجی توییت
 class MediaBase(BaseModel):
     id: int = Field(..., example=1)
-    url: str = Field(..., example="/api/medias/1") # آدرس URL محلی فایل
+    url: str = Field(..., example="/api/medias/1")  # آدرس URL محلی فایل
 
     class Config:
         from_attributes = True
@@ -79,9 +80,9 @@ class TweetResponseBase(BaseModel):
     id: int = Field(..., example=1)
     content: str = Field(..., example="This is my first tweet!")
     # Attachments اکنون به جای لیست لینک‌ها، لیست شمای مدیا است
-    attachments: List[MediaBase] = Field(..., default=[]) 
+    attachments: List[MediaBase] = Field(default_factory=list)  # اصلاح شده
     author: UserBase
-    likes: List[LikeBase] = Field(..., default=[]) # لیست کاربرانی که لایک کرده‌اند
+    likes: List[LikeBase] = Field(default_factory=list)  # اصلاح شده
 
     class Config:
         from_attributes = True
@@ -96,7 +97,7 @@ class TweetCreateResponse(BaseModel):
 # شمای پاسخ برای فید اصلی (GET /api/tweets)
 class TweetListResponse(BaseModel):
     result: bool = Field(..., example=True)
-    tweets: List[TweetResponseBase] = Field(..., default=[]) 
+    tweets: List[TweetResponseBase] = Field(default_factory=list)  # اصلاح شده
 
 
 # --- شمای پایه برای پاسخ‌های وضعیت (Status Responses) ---
@@ -104,6 +105,7 @@ class TweetListResponse(BaseModel):
 # شمای پاسخ موفقیت‌آمیز برای عملیات‌هایی مانند لایک، فالو، حذف
 class StatusResponse(BaseModel):
     result: bool = Field(..., example=True)
+
 
 # شمای پاسخ خطا (بر اساس سند Skillbox)
 class ErrorResponse(BaseModel):
